@@ -1,0 +1,11 @@
+{
+    "bindings": [
+        {
+            "name": "InputBlob",
+            "type": "blobTrigger",
+            "direction": "in",
+            "connection": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+            "path": "resourceconfigrestoreinput"
+        }
+    ]
+}
