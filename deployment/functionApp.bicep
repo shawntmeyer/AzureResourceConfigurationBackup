@@ -8,7 +8,7 @@ param location string = resourceGroup().location
 param logAnalyticsWorkspaceResourceId string
 
 @description('The package URI for the function app.')
-param packageUri string = 'https://raw.githubusercontent.com/paulhcode/AzureResourceConfigurationBackup/refs/heads/main/ResourceConfigBackup.zip'
+param packageUri string = 'https://raw.githubusercontent.com/paulhcode/AzureResourceConfigurationBackup/refs/heads/main/ResourceConfigBackup/ResourceConfigBackup.zip'
 
 @description('The PowerShell version')
 param powerShellVersion string = '7.4'
