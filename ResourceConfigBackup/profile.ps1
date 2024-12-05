@@ -7,24 +7,11 @@
 # * A Function App starts up after being de-allocated due to inactivity
 #
 
-switch ($env:website_hostname.split('.')[-1]) {
-    'net' {
-        Set-Variable -Name ResourceManagerUrl -Value 'https://management.azure.com' -Option Constant
-        Set-Variable -Name MicrosoftGraphUrl -Value 'https://graph.microsoft.com' -Option Constant
-        Set-Variable -Name StorageTokenUrl -Value 'https://storage.azure.com' -Option Constant
-        Set-Variable -Name StorageResourceUrl -Value 'https://storage.azure.com' -Option Constant
-    }
-    'us' {
-        Set-Variable -Name ResourceManagerUrl -Value 'https://management.usgovcloudapi.net' -Option Constant
-        Set-Variable -Name MicrosoftGraphUrl -Value 'https://graph.microsoft.us' -Option Constant
-        Set-Variable -Name StorageTokenUrl -Value 'https://storage.azure.com' -Option Constant
-        Set-Variable -Name StorageResourceUrl -Value 'https://storage.usgovcloudapi.net' -Option Constant
-        Set-Variable -Name LoginUrl -Value 'https://login.microsoftonline.us' -Option Constant
-    }
-    default {
-        Write-Error 'Unknown Azure Cloud'
-    }
-}
+Set-Variable -Name StorageTokenUrl -Value $env:StorageBlobEndpoint -Option Constant
+Set-Variable -Name LoginUrl -Value $env:LoginUrl -Option Constant
+Set-Variable -Name MicrosoftGraphUrl -Value $env:GraphUrl -Option Constant
+Set-Variable -Name ResourceManagerUrl -Value $env:ResourceManagerUrl -Option Constant
+
 If ($env:debug -eq 'true') {
     $ErrorActionPreference = 'Continue'
     $WarningPreference = 'Continue'

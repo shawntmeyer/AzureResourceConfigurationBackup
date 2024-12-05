@@ -3,7 +3,7 @@
 	"view": {
 		"kind": "Form",
 		"properties": {
-			"title": "Test Form View",
+			"title": "Backup and Restore Resource Configuration Function App",
 			"steps": [
 				{
 					"name": "basics",
@@ -19,6 +19,27 @@
 							}
 						},
 						{
+							"name": "functionApp_checkNameAvailability",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"request": {
+								"method": "POST",
+								"path": "[concat(steps('basics').resourceScope.subscription.id,'/providers/Microsoft.Web/checkNameAvailability?api-version=2022-03-01')]",
+								"body": {
+									"name": "[steps('basics').functionAppName]",
+									"type": "Microsoft.Web/sites"
+								}
+							}
+						},
+						{
+							"name": "functionAppName_rePUT",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"request": {
+								"method": "GET",
+								"path": "[concat(steps('basics').resourceScope.resourceGroup.id, '/providers/Microsoft.Web/sites/', steps('basics').functionAppName,'?api-version=2022-03-01')]",
+								"body": {}
+							}
+						},
+						{
 							"name": "functionAppName",
 							"type": "Microsoft.Common.TextBox",
 							"label": "Function App Name",
@@ -26,34 +47,86 @@
 							"toolTip": "The name of the function app that you wish to create.",
 							"constraints": {
 								"required": false,
-								"regex": "",
-								"validationMessage": "",
-								"validations": []
+								"validations": [
+									{
+										"isValid": "[or(steps('basics').functionApp_checkNameAvailability.nameAvailable, equals(steps('basics').functionApp_checkNameAvailability.reason, 'AlreadyExists'))]",
+										"message": "[steps('basics').functionApp_checkNameAvailability.message]"
+									},
+									{
+										"isValid": "[or(steps('basics').functionApp_checkNameAvailability.nameAvailable, equals(steps('basics').functionAppName_rePUT.id, concat(steps('basics').resourceScope.resourceGroup.id, '/providers/Microsoft.Web/sites/', steps('basics').functionAppName)), not(equals(steps('basics').functionApp_checkNameAvailability.reason, 'AlreadyExists')))]",
+										"message": "[steps('basics').functionApp_checkNameAvailability.message]"
+									}
+								]
 							},
-							"infoMessages": [],
-							"visible": true
-						},						
-						{
-							"name": "powerShellVersion",
-							"label": "Power Shell Version",
-                            "type": "Microsoft.Common.TextBox",
-							"subLabel": "",
-							"defaultValue": "7.4",
-							"toolTip": "The PowerShell version",
-							"constraints": {
-								"required": false,
-								"regex": "",
-								"validationMessage": "",
-								"validations": []
-							},
-							"infoMessages": [],
 							"visible": true
 						},
 						{
-							"name": "sentinelWorkspace",
+							"name": "functionAppStacksApi",
+							"type": "Microsoft.Solutions.ArmApiControl",
+							"request": {
+								"method": "GET",
+								"path": "[concat('/providers/', 'Microsoft.Web/locations/', steps('basics').resourceScope.location.name, '/functionAppStacks?api-version=2022-03-01')]"
+							}
+						},
+						{
+							"name": "powerShellVersion",
+							"type": "Microsoft.Common.DropDown",
+							"label": "Runtime Stack Minor Version",
+							"defaultValue": "PowerShell 7.4",
+							"multiLine": false,
+							"toolTip": "The powershell version.",
+							"constraints": {
+								"required": false,
+								"allowedValues": "[map(first(map(filter(first(map(filter(steps('basics').functionAppStacksApi.value, (stack) => equals(stack.name, 'powershell')), (stack) => stack.properties.majorVersions)), (majVer) => equals(majVer.value, '7')), (majVer) => majVer.minorVersions)), (minVer) => parse(concat('{\"label\":\"', minVer.displayText, '\",\"value\":\"', minVer.value, '\"}')))]"
+							},
+							"visible": true
+						},
+						{
+							"name": "enableApplicationInsights",
+							"type": "Microsoft.Common.OptionsGroup",
+							"label": "Enable Application Insights",
+							"defaultValue": "Yes",
+							"toolTip": "Choose 'Yes' to enable application insights.",
+							"constraints": {
+								"allowedValues": [
+									{
+										"label": "Yes",
+										"value": true
+									},
+									{
+										"label": "No",
+										"value": false
+									}
+								]
+							}
+						},
+						{
+							"name": "logAnalyticsWorkspace",
 							"type": "Microsoft.Solutions.ResourceSelector",
-							"label": "Sentinel Workspace",
-							"resourceType": "Microsoft.OperationsManagement/solutions"
+							"label": "Log Analytics Workspace",
+							"resourceType": "Microsoft.OperationalInsights/workspaces",
+							"scope": {
+								"subscriptionId": "[steps('basics').resourceScope.subscription.subscriptionId]",
+								"location": "[steps('basics').resourceScope.location.name]"
+							},
+							"toolTip": "The log analytics workspace to where diagnostic logs are sent.",
+							"visible": "[steps('basics').enableApplicationInsights]"
+						}
+					]
+				},
+				{
+					"name": "tags",
+					"label": "Tags",
+					"elements": [
+						{
+							"name": "tags",
+							"type": "Microsoft.Common.TagsByResource",
+							"resources": [
+								"Microsoft.Insights/components",
+								"Microsoft.Storage/storageAccounts",
+								"Microsoft.Web/sites",
+								"Microsoft.Web/serverFarms"
+							]
 						}
 					]
 				}
@@ -66,9 +139,7 @@
 			"parameters": {
 				"functionAppName": "[steps('basics').functionAppName]",
 				"powerShellVersion": "[steps('basics').powerShellVersion]",
-				"sentinelWorkspaceName": "[last(split(steps('basics').sentinelWorkspace.id, '/'))]",
-				"sentinelSubscriptionId": "[first(skip(split(steps('basics').sentinelWorkspace.id, '/'), 2))]",
-				"sentinelResourceGroupName": "[first(skip(split(steps('basics').sentinelWorkspace.id, '/'), 4))]"
+				"logAnalyticsWorkspaceResourceId": "[if(steps('basics').enableApplicationInsights, steps('basics').logAnalyticsWorkspace.id, '')]"
 			}
 		}
 	}
