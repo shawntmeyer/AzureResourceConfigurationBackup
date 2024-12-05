@@ -8,7 +8,7 @@ param location string = resourceGroup().location
 param logAnalyticsWorkspaceResourceId string
 
 @description('The package URI for the function app.')
-param packageUri string = 'https://raw.githubusercontent.com/paulhcode/AzureResourceConfigurationBackup/refs/heads/main/ResourceConfigBackup/ResourceConfigBackup.zip'
+param packageUri string = 'https://github.com/PaulHCode/AzureResourceConfigurationBackup/raw/refs/heads/main/ResourceConfigBackup/ResourceConfigBackup.zip'
 
 @description('The PowerShell version')
 param powerShellVersion string = '7.4'
@@ -94,7 +94,7 @@ var appSettings = union(
 var cloudSuffix = replace(replace(environment().resourceManager, 'https://management.', ''), '/', '')
 var hostingPlanName = functionAppName
 var applicationInsightsName = functionAppName
-var storageAccountName = toLower(take('${functionAppName}${uniqueString(resourceGroup().id, functionAppName)}', 24))
+var storageAccountName = replace(replace(toLower(take('${functionAppName}${uniqueString(resourceGroup().id, functionAppName)}', 24)), '-', ''), '_', '')
 var resourceConfigContainerNames = [
   'backup'
   'resourceconfigrestoreinput'
