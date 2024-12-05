@@ -13,6 +13,84 @@ param packageUri string = 'https://raw.githubusercontent.com/paulhcode/AzureReso
 @description('The PowerShell version')
 param powerShellVersion string = '7.4'
 
+var appSettings = union(
+  [
+    {
+      name: 'AzureWebJobsStorage'
+      value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+    }
+    {
+      name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
+      value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+    }
+    {
+      name: 'WEBSITE_CONTENTSHARE'
+      value: toLower(functionAppName)
+    }
+    {
+      name: 'FUNCTIONS_EXTENSION_VERSION'
+      value: '~4'
+    }
+    {
+      name: 'WEBSITE_NODE_DEFAULT_VERSION'
+      value: '~14'
+    }
+    {
+      name: 'FUNCTIONS_WORKER_RUNTIME'
+      value: 'powershell'
+    }
+    {
+      name: 'EnvironmentName'
+      value: environment().name
+    }
+    {
+      name: 'GraphUrl'
+      value: endsWith(environment().graph, '/')
+        ? substring(environment().graph, 0, length(environment().graph) - 1)
+        : environment().graph
+    }
+    {
+      name: 'ResourceManagerUrl'
+      // This workaround is needed because the environment().resourceManager value is missing the trailing slash for some Azure environments
+      value: endsWith(environment().resourceManager, '/')
+        ? substring(environment().resourceManager, 0, length(environment().resourceManager) - 1)
+        : environment().resourceManager
+    }
+    {
+      name: 'LoginUrl'
+      value: endsWith(environment().authentication.loginEndpoint, '/')
+        ? substring(
+            environment().authentication.loginEndpoint,
+            0,
+            length(environment().authentication.loginEndpoint) - 1
+          )
+        : environment().authentication.loginEndpoint
+    }
+    {
+      name: 'ResourceConfigOutputURL'
+      value: '${storageAccount.properties.primaryEndpoints.blob}${resourceConfigContainerNames[0]}'
+    }
+    {
+      name: 'StorageBlobEndpoint'
+      value: endsWith(storageAccount.properties.primaryEndpoints.blob, '/')
+        ? substring(
+            storageAccount.properties.primaryEndpoints.blob,
+            0,
+            length(storageAccount.properties.primaryEndpoints.blob) - 1
+          )
+        : storageAccount.properties.primaryEndpoints.blob
+    }
+  ],
+  !empty(logAnalyticsWorkspaceResourceId)
+    ? [
+        {
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: applicationInsights.properties.InstrumentationKey
+        }
+      ]
+    : []
+)
+
 var cloudSuffix = replace(replace(environment().resourceManager, 'https://management.', ''), '/', '')
 var hostingPlanName = functionAppName
 var applicationInsightsName = functionAppName
@@ -48,7 +126,7 @@ resource blobContainers 'Microsoft.Storage/storageAccounts/blobServices/containe
   }
 ]
 
-resource storageAccount_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if(!empty(logAnalyticsWorkspaceResourceId)) {
+resource storageAccount_diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!empty(logAnalyticsWorkspaceResourceId)) {
   name: '${storageAccountName}-diagnosticSettings'
   properties: {
     metrics: [
@@ -81,69 +159,7 @@ resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
   properties: {
     serverFarmId: hostingPlan.id
     siteConfig: {
-      appSettings: [
-        {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
-        }
-        {
-          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
-        }
-        {
-          name: 'WEBSITE_CONTENTSHARE'
-          value: toLower(functionAppName)
-        }
-        {
-          name: 'FUNCTIONS_EXTENSION_VERSION'
-          value: '~4'
-        }
-        {
-          name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: '~14'
-        }
-        {
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: applicationInsights.properties.InstrumentationKey
-        }
-        {
-          name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'powershell'
-        }
-        {
-          name: 'EnvironmentName'
-          value: environment().name
-        }
-        {
-          name: 'GraphUrl'
-          value: endsWith(environment().graph, '/')
-            ? substring(environment().graph, 0, length(environment().graph) - 1)
-            : environment().graph
-        }
-        {
-          name: 'ResourceManagerUrl'
-          // This workaround is needed because the environment().resourceManager value is missing the trailing slash for some Azure environments
-          value: endsWith(environment().resourceManager, '/')
-            ? substring(environment().resourceManager, 0, length(environment().resourceManager) - 1)
-            : environment().resourceManager
-        }
-        {
-          name: 'LoginUrl'
-          value: endsWith(environment().authentication.loginEndpoint, '/')
-          ? substring(environment().authentication.loginEndpoint, 0, length(environment().authentication.loginEndpoint) - 1)
-          : environment().authentication.loginEndpoint
-        }
-        {
-          name: 'ResourceConfigOutputURL'
-          value: '${storageAccount.properties.primaryEndpoints.blob}${resourceConfigContainerNames[0]}'
-        }
-        {
-          name: 'StorageBlobEndpoint'
-          value: endsWith(storageAccount.properties.primaryEndpoints.blob, '/')
-            ? substring(storageAccount.properties.primaryEndpoints.blob, 0, length(storageAccount.properties.primaryEndpoints.blob) - 1)
-            : storageAccount.properties.primaryEndpoints.blob
-        }
-      ]
+      appSettings: appSettings
       cors: {
         allowedOrigins: [
           '${environment().portal}'
@@ -171,7 +187,7 @@ resource functions 'Microsoft.Web/sites/extensions@2023-12-01' = {
   }
 }
 
-resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = if(!empty(logAnalyticsWorkspaceResourceId)) {
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = if (!empty(logAnalyticsWorkspaceResourceId)) {
   name: applicationInsightsName
   location: location
   kind: 'web'
