@@ -31,7 +31,7 @@
     },
     "packageUri": {
       "type": "string",
-      "defaultValue": "https://raw.githubusercontent.com/PaulHCode/AzureResourceConfigurationBackup/refs/heads/main/ResourceConfigBackup.zip",
+      "defaultValue": "https://raw.githubusercontent.com/paulhcode/AzureResourceConfigurationBackup/refs/heads/main/ResourceConfigBackup.zip",
       "metadata": {
         "description": "The package URI for the function app."
       }
