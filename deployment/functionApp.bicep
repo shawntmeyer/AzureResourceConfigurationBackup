@@ -14,6 +14,14 @@ param packageUri string = 'https://github.com/PaulHCode/AzureResourceConfigurati
 param powerShellVersion string = '7.4'
 
 var appSettings = union(
+  !empty(logAnalyticsWorkspaceResourceId)
+    ? [
+        {
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: applicationInsights.properties.InstrumentationKey
+        }
+      ]
+    : [],
   [
     {
       name: 'AzureWebJobsStorage'
@@ -80,21 +88,21 @@ var appSettings = union(
           )
         : storageAccount.properties.primaryEndpoints.blob
     }
-  ],
-  !empty(logAnalyticsWorkspaceResourceId)
-    ? [
-        {
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: applicationInsights.properties.InstrumentationKey
-        }
-      ]
-    : []
+    {
+      name: 'WEBSITE_RUN_FROM_PACKAGE'
+      value: '1'
+    }
+  ]
 )
 
 var cloudSuffix = replace(replace(environment().resourceManager, 'https://management.', ''), '/', '')
 var hostingPlanName = functionAppName
 var applicationInsightsName = functionAppName
-var storageAccountName = replace(replace(toLower(take('${functionAppName}${uniqueString(resourceGroup().id, functionAppName)}', 24)), '-', ''), '_', '')
+var storageAccountName = replace(
+  replace(toLower(take('${functionAppName}${uniqueString(resourceGroup().id, functionAppName)}', 24)), '-', ''),
+  '_',
+  ''
+)
 var resourceConfigContainerNames = [
   'backup'
   'resourceconfigrestoreinput'
