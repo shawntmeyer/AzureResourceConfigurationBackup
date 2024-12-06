@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.31.92.45157",
-      "templateHash": "16463492065393836087"
+      "templateHash": "443580908292371523"
     }
   },
   "parameters": {
@@ -31,7 +31,7 @@
     },
     "packageUri": {
       "type": "string",
-      "defaultValue": "https://raw.githubusercontent.com/paulhcode/AzureResourceConfigurationBackup/refs/heads/main/ResourceConfigBackup.zip",
+      "defaultValue": "https://github.com/shawntmeyer/AzureResourceConfigurationBackup/raw/refs/heads/main/ResourceConfigBackup.zip",
       "metadata": {
         "description": "The package URI for the function app."
       }
@@ -48,7 +48,7 @@
     "cloudSuffix": "[replace(replace(environment().resourceManager, 'https://management.', ''), '/', '')]",
     "hostingPlanName": "[parameters('functionAppName')]",
     "applicationInsightsName": "[parameters('functionAppName')]",
-    "storageAccountName": "[toLower(take(format('{0}{1}', parameters('functionAppName'), uniqueString(resourceGroup().id, parameters('functionAppName'))), 24))]",
+    "storageAccountName": "[toLower(take(format('{0}{1}', replace(replace(parameters('functionAppName'), '-', ''), '_', ''), uniqueString(resourceGroup().id, parameters('functionAppName'))), 24))]",
     "resourceConfigContainerNames": [
       "backup",
       "resourceconfigrestoreinput"
@@ -133,60 +133,7 @@
       "properties": {
         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "siteConfig": {
-          "appSettings": [
-            {
-              "name": "AzureWebJobsStorage",
-              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').keys[0].value)]"
-            },
-            {
-              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').keys[0].value)]"
-            },
-            {
-              "name": "WEBSITE_CONTENTSHARE",
-              "value": "[toLower(parameters('functionAppName'))]"
-            },
-            {
-              "name": "FUNCTIONS_EXTENSION_VERSION",
-              "value": "~4"
-            },
-            {
-              "name": "WEBSITE_NODE_DEFAULT_VERSION",
-              "value": "~14"
-            },
-            {
-              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
-              "value": "[reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName')), '2020-02-02').InstrumentationKey]"
-            },
-            {
-              "name": "FUNCTIONS_WORKER_RUNTIME",
-              "value": "powershell"
-            },
-            {
-              "name": "EnvironmentName",
-              "value": "[environment().name]"
-            },
-            {
-              "name": "GraphUrl",
-              "value": "[if(endsWith(environment().graph, '/'), substring(environment().graph, 0, sub(length(environment().graph), 1)), environment().graph)]"
-            },
-            {
-              "name": "ResourceManagerUrl",
-              "value": "[if(endsWith(environment().resourceManager, '/'), substring(environment().resourceManager, 0, sub(length(environment().resourceManager), 1)), environment().resourceManager)]"
-            },
-            {
-              "name": "LoginUrl",
-              "value": "[if(endsWith(environment().authentication.loginEndpoint, '/'), substring(environment().authentication.loginEndpoint, 0, sub(length(environment().authentication.loginEndpoint), 1)), environment().authentication.loginEndpoint)]"
-            },
-            {
-              "name": "ResourceConfigOutputURL",
-              "value": "[format('{0}{1}', reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob, variables('resourceConfigContainerNames')[0])]"
-            },
-            {
-              "name": "StorageBlobEndpoint",
-              "value": "[if(endsWith(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob, '/'), substring(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob, 0, sub(length(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob), 1)), reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob)]"
-            }
-          ],
+          "appSettings": "[union(if(not(empty(parameters('logAnalyticsWorkspaceResourceId'))), createArray(createObject('name', 'APPINSIGHTS_INSTRUMENTATIONKEY', 'value', reference(resourceId('Microsoft.Insights/components', variables('applicationInsightsName')), '2020-02-02').InstrumentationKey)), createArray()), createArray(createObject('name', 'AzureWebJobsStorage', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').keys[0].value)), createObject('name', 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('storageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').keys[0].value)), createObject('name', 'WEBSITE_CONTENTSHARE', 'value', toLower(parameters('functionAppName'))), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'WEBSITE_NODE_DEFAULT_VERSION', 'value', '~14'), createObject('name', 'FUNCTIONS_WORKER_RUNTIME', 'value', 'powershell'), createObject('name', 'EnvironmentName', 'value', environment().name), createObject('name', 'GraphUrl', 'value', if(endsWith(environment().graph, '/'), substring(environment().graph, 0, sub(length(environment().graph), 1)), environment().graph)), createObject('name', 'ResourceManagerUrl', 'value', if(endsWith(environment().resourceManager, '/'), substring(environment().resourceManager, 0, sub(length(environment().resourceManager), 1)), environment().resourceManager)), createObject('name', 'LoginUrl', 'value', if(endsWith(environment().authentication.loginEndpoint, '/'), substring(environment().authentication.loginEndpoint, 0, sub(length(environment().authentication.loginEndpoint), 1)), environment().authentication.loginEndpoint)), createObject('name', 'ResourceConfigOutputURL', 'value', format('{0}{1}', reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob, variables('resourceConfigContainerNames')[0])), createObject('name', 'StorageBlobEndpoint', 'value', if(endsWith(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob, '/'), substring(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob, 0, sub(length(reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob), 1)), reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2022-05-01').primaryEndpoints.blob)), createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1')))]",
           "cors": {
             "allowedOrigins": [
               "[format('{0}', environment().portal)]",
