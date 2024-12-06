@@ -98,7 +98,10 @@ var appSettings = union(
 var cloudSuffix = replace(replace(environment().resourceManager, 'https://management.', ''), '/', '')
 var hostingPlanName = functionAppName
 var applicationInsightsName = functionAppName
-var storageAccountName = toLower(take('${replace(replace(functionAppName, '-', ''), '_', '')}${uniqueString(resourceGroup().id, functionAppName)}', 24))
+var storageAccountName = toLower(take(
+  '${replace(replace(functionAppName, '-', ''), '_', '')}${uniqueString(resourceGroup().id, functionAppName)}',
+  24
+))
 var resourceConfigContainerNames = [
   'backup'
   'resourceconfigrestoreinput'
