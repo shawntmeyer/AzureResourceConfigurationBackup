@@ -21,6 +21,7 @@
 						{
 							"name": "functionApp_checkNameAvailability",
 							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[not(empty(steps('basics').functionAppName))]",
 							"request": {
 								"method": "POST",
 								"path": "[concat(steps('basics').resourceScope.subscription.id,'/providers/Microsoft.Web/checkNameAvailability?api-version=2022-03-01')]",
@@ -29,16 +30,7 @@
 									"type": "Microsoft.Web/sites"
 								}
 							}
-						},
-						{
-							"name": "functionAppName_rePUT",
-							"type": "Microsoft.Solutions.ArmApiControl",
-							"request": {
-								"method": "GET",
-								"path": "[concat(steps('basics').resourceScope.resourceGroup.id, '/providers/Microsoft.Web/sites/', steps('basics').functionAppName,'?api-version=2022-03-01')]",
-								"body": {}
-							}
-						},
+						},						
 						{
 							"name": "functionAppName",
 							"type": "Microsoft.Common.TextBox",
@@ -49,11 +41,7 @@
 								"required": false,
 								"validations": [
 									{
-										"isValid": "[or(steps('basics').functionApp_checkNameAvailability.nameAvailable, equals(steps('basics').functionApp_checkNameAvailability.reason, 'AlreadyExists'))]",
-										"message": "[steps('basics').functionApp_checkNameAvailability.message]"
-									},
-									{
-										"isValid": "[or(steps('basics').functionApp_checkNameAvailability.nameAvailable, equals(steps('basics').functionAppName_rePUT.id, concat(steps('basics').resourceScope.resourceGroup.id, '/providers/Microsoft.Web/sites/', steps('basics').functionAppName)), not(equals(steps('basics').functionApp_checkNameAvailability.reason, 'AlreadyExists')))]",
+										"isValid": "[steps('basics').functionApp_checkNameAvailability.nameAvailable]",
 										"message": "[steps('basics').functionApp_checkNameAvailability.message]"
 									}
 								]
@@ -63,6 +51,7 @@
 						{
 							"name": "functionAppStacksApi",
 							"type": "Microsoft.Solutions.ArmApiControl",
+							"condition": "[not(empty(steps('basics').resourceScope.location.name))]",
 							"request": {
 								"method": "GET",
 								"path": "[concat('/providers/', 'Microsoft.Web/locations/', steps('basics').resourceScope.location.name, '/functionAppStacks?api-version=2022-03-01')]"
